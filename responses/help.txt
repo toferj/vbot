@@ -1,0 +1,9 @@
+ Greetings! I am Valkyrie the bot for this guild...
+
+ Here are the things I understand so far:
+   karma (try `!help karma`)
+   `!help` (this message)
+   `!boot [user]` (just kidding... or am i?)
+   `!help [command]` (e.g. !help boot)
+ 
+ What other things do you wish I could do?

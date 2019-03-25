@@ -1,26 +1,29 @@
-// client id: 559449003796725804
-// client secret: Ns08ZxdkX9fmim9NsmW3hkwCvmi4GkHk
-// bot secret token: NTU5NDQ5MDAzNzk2NzI1ODA0.D3lnAg.deA_BKDY8Q0nGhWn_HX2012kDPo
-// permissions integer: 1275210880
-//   View Audit Log
-//   Change Nickname
-//   Manage Nicknames
-//   View Channels
-//   Send Text Messages (like SMS??)
-//   Manage Messages
-//   Mention Everyone
 // Authorize the bot with the following url:
 // https://discordapp.com/oauth2/authorize?client_id=559449003796725804&scope=bot
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
+const fs = require('fs');
+const util = require('util');
 
-client.on('ready', () => {
-  // List servers the bot is connected to
-  console.log('Vbot is ready.');
-  client.user.setActivity('what you type...', { type: 'WATCHING' });
+// Convert fs.readFile into Promise version of same
+const readFile = util.promisify(fs.readFile);
+
+let botToken;
+let knownCommands;
+
+console.log('reading token file...');
+fs.readFile('token.dat', 'utf8', (err, token) => {
+  if (err) throw err;
+  // login to the guild...
+  client.login(token);
 });
 
+client.on('ready', () => {
+  startUp();
+});
+
+// The main message router...
 client.on('message', receivedMessage => {
   // Prevent bot from responding to its own messages
   if (receivedMessage.author == client.user) {
@@ -32,37 +35,73 @@ client.on('message', receivedMessage => {
   }
 });
 
+function startUp(restarting) {
+  if (restarting) console.log('restarting...');
+
+  console.log('reading knowncomands...');
+  fs.readFile('knowncommands.json', (err, data) => {
+    if (err) throw err;
+    knownCommands = JSON.parse(data);
+    console.log('setting bot status message...');
+    client.user.setActivity('what you type...', { type: 'WATCHING' });
+    console.log('Vbot is ready.');
+    console.log(knownCommands);
+  });
+}
+
 function processCommand(receivedMessage) {
   let fullCommand = receivedMessage.content.substr(1);
   let cmdParts = fullCommand.split(' ');
   let command = cmdParts[0].toLowerCase();
   let arguments = cmdParts.slice(1);
 
-  if (command === 'help') {
-    helpCommand(arguments, receivedMessage);
+  switch (command) {
+    case 'help':
+      helpCommand(arguments, receivedMessage);
+      break;
+    case 'boot':
+      bootUser(arguments, receivedMessage);
+      break;
+    case 'restart':
+      startUp(true);
+      break;
+    default:
+      getResponse('huh.txt').then(message => {
+        receivedMessage.channel.send(message);
+      });
+      break;
+  }
+}
+
+function bootUser(arguments, receivedMessage) {
+  const message = [];
+  if (arguments.length) {
+    message.push('Hey @everyone, ' + receivedMessage.author.toString() + ' ');
+    message.push('tried to boot someone from the guild!!');
+    receivedMessage.channel.send(message.join(''));
   } else {
-    receivedMessage.channel.send(
-      "I don't understand the command '" + command + "'. Try `!help`"
-    );
+    getResponse('boot.txt').then(message => {
+      receivedMessage.channel.send(message);
+    });
   }
 }
 
 function helpCommand(arguments, receivedMessage) {
-  if (arguments.length > 0) {
-    receivedMessage.channel.send(
-      'It looks like you want help with ' + arguments
-    );
+  if (!arguments.length) {
+    getResponse('help.txt').then(message => {
+      receivedMessage.channel.send(message);
+    });
+  } else if (knownCommands.includes(arguments[0])) {
+    getResponse(arguments[0] + '.txt').then(message => {
+      receivedMessage.channel.send(message);
+    });
   } else {
-    // receivedMessage.channel.send(
-    //   "I don't know how to help you with " + arguments + ". Try `!help [topic]`"
-    // );
-    receivedMessage.channel.send(
-      "I don't know what you want help with. Try `!help [topic]`"
-    );
+    getResponse('unknown.txt').then(message => {
+      receivedMessage.channel.send(message);
+    });
   }
 }
 
-bot_secret_token =
-  'NTU5NDQ5MDAzNzk2NzI1ODA0.D3l8Cg.XGt6NWYio9Iq1Vm0GzXkfq5Yhmk';
-
-client.login(bot_secret_token);
+async function getResponse(command) {
+  return await readFile('./responses/' + command, 'utf8');
+}

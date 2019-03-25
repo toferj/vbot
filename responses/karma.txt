@@ -1,0 +1,8 @@
+This feature is under construction, but once completed will allow 
+you to give karma points to your guild mates by typing the following
+command `@username ++`
+
+Hint: when using @ names with spaces justomit the spaces as shown below.
+
+For example:
+  `@LordGumball ++`
